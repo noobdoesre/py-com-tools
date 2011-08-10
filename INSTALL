@@ -1,0 +1,30 @@
+REQUIREMENTS:
+
+Python 2.5, 2.6, or 2.7
+
+pywin32
+
+http://sourceforge.net/projects/pywin32/
+
+There's no easy_install magic for pywin32, you need to download the standalone installer from the
+sourceforge site.
+
+INSTALL:
+
+Both the standalone tool and the IDApython script require the iquery extension, which is a c++
+extension to Python that provides a primitive interface to QueryInterface(). This package contains
+prebuilt versions of iquery for all the versions of Python listed above. Simply copy the version you
+need into the root directory of the tool:
+
+cp iquery/Python26/_iquery.pyd .
+
+You also need to change the interpreter line in comTool.py to point to your version of Python. It's
+currently set to C:\Python26\python.exe, or just pass the script to the interpreter of your choice.
+
+To install the IDApython script, copy the following files/directory into your IDA/python directory:
+
+idaCOM.py
+iquery.py
+pyTypeLibs.py
+sdk-tlbs
+_iquery.pyd

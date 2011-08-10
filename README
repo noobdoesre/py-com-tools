@@ -1,0 +1,124 @@
+OVERVIEW:
+
+This tool consists of two components, a standalone tool and an IDApython script. The goal of both is
+to help find interesting COM code to audit, specifically code that can be triggered via loading an
+ActiveX control in the browser.
+
+Other tools are useful for fuzzing (comRaider, Dranzer) or for partially auditing (IDA COM Plugin),
+but they are incomplete. This tool is certainly not complete, but it does fill a gap. The
+functionality of each component breaks down as follows.
+
+comTool.py:
+
+This tool is used to dump information about installed COM objects, as well as to dump information
+from a binary that contains COM objects that does not have to be installed.  It contains the
+following functionality:
+
+-dump basic information about all controls installed that are on the IE ActiveX whitelist. This
+includes scripting/initialization support, ASLR status, target binaries, ProgID, etc. This can also
+be used to copy all of the target binaries for each control into a local directory for analysis.
+
+-dump detailed information, including all implemented interfaces, for any registered COM control on
+the system.
+
+-dump detailed information, including all implemented interfaces and coclasses for a binary,
+regardless of whether or not it is installed on the system. this relies on a TLB being present in
+the binary, or if not, you must at least pass it a CLSID to try and instantiate via the binary's
+DllGetClassObject() export.
+
+-dump all information in a typelib
+-dump all information in the system installed (CLSID/TypeLib) typelibs
+
+-show ASLR status for all installed COM objects registered on the system (maybe you have some clever
+way to get one loaded in IE ;))
+
+
+idaCOM.py:
+
+This idapython script is used as an audit aid for COM controls. When run, it will parse the binary's
+typelib, and attempt to instantiate any coclass it finds. Each coclass will then be queried to find
+all supported interfaces. All discovered classes and interfaces will then be renamed as follows:
+
+className__interfaceName__functionName
+
+example:
+
+.text:129B0408  dd offset WindowsMediaPlayer__IPersistStreamInit__Load
+
+The output window will contain information about the classes discovered, and the locations of the
+vtables. Like anything in the output window, double clicking on the vtable address will jump to that
+address in the view pane.
+
+
+BASIC USAGE:
+
+comTool.py
+
+The usage message from -h is pretty self explanatory. The one thing of note is the -t switch. This
+switch is used to provide a directory full of typelibs. The tool comes with a bunch of typelibs that
+were painfully compiled from the SDK idl files. These describe many of the common microsoft defined
+interfaces that many COM objects implement, they're in sdk-tlbs.
+
+idaCOM.py
+
+Load up your binary, let analysis finish, and then alt-f7 to run idaCOM.py. Assuming the binary has
+a typelib, you should get a dump of supported classes/interfaces in the output window. Note that
+some COM objects, Flash for example, take a long time (15 mins). I haven't tracked down exactly why
+yet, but give it some time to finish.
+
+
+ADVANCED USAGE:
+
+A problem you might run into is the following error when dumping all interfaces supported by a
+control:
+
+ERROR: None ({959506C1-0314-4EC5-9E61-8528DB5E5478}) has no base class, {00000000-0000-0000-C000-000000000046}
+
+This occurs when we have the IID of an interface, but are unable to resolve its base class
+hierarchy. This interface happens to be the IWMPRenderConfig interface:
+
+http://msdn.microsoft.com/en-us/library/dd563639(v=vs.85).aspx
+
+Why can't we resolve its hierarchy? Because it is not described by any of the IDL files that were
+compiled to TLB files (in the sdk-tlbs/), and because it is also not described in any of the TLB
+files found in HKCR/TypeLib. The way we resolve base class hierarchies is by parsing the TLB, using
+the ITypeInfo interface. This code is in pyTypeLibs.py, the class tInterface, parse() method. Simply
+put, we need the IDL/TLB file for that describes the interface we want to resolve. I have edited and
+compiled a number of these IDL files from the platform SDK. When you encounter the unresolved base
+situation, you have a couple of options:
+
+-write your own IDL file, compile it to TLB with midl.exe, drop it into sdk-tlbs/
+-find the IDL file (in the example, it's in the WMP SDK), compile it into a TLB
+
+One of the problems you'll encounter is that midl.exe only creates a TLB file if the target IDL file
+contains a [library] statement. Most of the SDK IDL files do not contain this, because they were not
+meant to be used in this fashion (they're for generating header/stub files, not for OLE automation).
+If you're lucky, you can simply wrap the existing IDL code in a library statement (see
+SDK_v7.0A_idl/Dispex.Idl for an example). If you're unlucky, you'll get cryptic compilation errors
+from the very unverbose midl.exe compiler. You're using the IDL file in a way it wasn't meant to be
+used, so getting it to compile can be a bitch. Several of the TLBs included were painful to
+generate, and involved lots of delete, add, compile steps.
+
+The IDL/TLB files included with this are from the platform SDK v7.0A, and they're compiled with the
+midl compiler from the same SDK. Don't mix and match midl/IDL versions, you'll get terrible cryptic
+error failures.
+
+One such fail that caused a lot of pain for me was getting OCIdl.idl to compile. OCIdl.idl has an
+issue with including ObjIdl.idl after adding the library statement. it results in internal compiler
+error w/o any message as to why. solution is to compile OCIdl.idl first, and then add the library
+statement to ObjIdl and compile it after.
+
+
+CAVEATS/BROKED:
+
+-Some Microsoft DLLs fail in the LoadLibrary() call, even though file permissions are OK. A possible
+reason for this is that some DLLS, msxml3.dll is one example, try to load resource libraries. They
+do this based on their GetModuleName() path; for example, msxml3.dll tries to load msxml3r.dll from
+whatever the base directory of the module is. In normal circumstances, system32/ is the base
+directory of module, which is where msxml3r.dll is located. But if you copy it to some local
+directory, or rename it, this will cause LoadLibrary() failures.
+
+-All DLLs are loaded into the Python address space. If you try and local copy of a DLL that is
+already loaded in the process and it has the same name, the LoadLibrary() call will succeed, and
+return to you the handle of the already loaded DLL. This is probably not what you want, so rename
+the DLL.
