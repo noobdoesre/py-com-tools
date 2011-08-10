@@ -551,14 +551,17 @@ def usage(prog):
             "\t[ -b <typelib file> to dump ] [ -C coclass clsid (with -f if no tlb) ]\n" \
             "\t[ -p <dir> copy all binaries from whitelist controls into dir (use with -x) ]\n" \
             "\nExamples:\n" \
-            "  Dump all COM classes found in the TLB of somBinary:\n" \
+            "\n  Dump basic info for all controls on the whitelist\n" \
+            "  This is NOT an exhaustive list of all interfaces, just scripting/initialization.\n" \
+            "\t%s -x -t sdk-tlbs\n" \
+            "\n  Dump all COM classes and interfaces in somBinary:\n" \
+            "  This option is needed when the binary has no TLB and is not a registered COM object\n" \
             "\t%s -f somBinary -t sdk-tlbs\n" \
             "\n  Dump COM class CLSID from somBinary:\n" \
             "  This option is needed when the binary has no TLB and is not a registered COM object\n" \
             "\t%s -f somBinary -t sdk-tlbs -C coclass CLSID\n" \
-            "\n  Dump basic info for all controls on the whitelist\n" \
-            "  This is NOT an exhaustive list of all interfaces, just scripting/initialization.\n" \
-            "\t%s -x -t sdk-tlbs\n" \
+            "  Dump all COM classes found in the TLB of somBinary:\n" \
+            "\t%s -f somBinary -t sdk-tlbs\n" \
             % (prog, prog, prog, prog)
     sys.exit(1)
 
