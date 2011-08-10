@@ -67,6 +67,14 @@ some COM objects, Flash for example, take a long time (15 mins). I haven't track
 yet, but give it some time to finish.
 
 
+NOTE ON sdk-tlbs:
+
+All of the tlb files in this directory were compiled from idl files found in the platform SDK. In
+order to have vtables for all of the Microsoft defined interfaces, and to resolve interface
+hierarchies, these files are necessary. If you rely solely on the tlb files in the registry, and in
+the target binary you're dumping, you'll be missing many system defined interfaces.
+
+
 ADVANCED USAGE:
 
 A problem you might run into is the following error when dumping all interfaces supported by a
@@ -99,14 +107,14 @@ from the very unverbose midl.exe compiler. You're using the IDL file in a way it
 used, so getting it to compile can be a bitch. Several of the TLBs included were painful to
 generate, and involved lots of delete, add, compile steps.
 
-The IDL/TLB files included with this are from the platform SDK v7.0A, and they're compiled with the
-midl compiler from the same SDK. Don't mix and match midl/IDL versions, you'll get terrible cryptic
-error failures.
+The TLB files included with this are from the platform SDK v7.0A, and they're compiled with the midl
+compiler from the same SDK. Don't mix and match midl/IDL versions, you'll get terrible cryptic error
+failures.
 
 One such fail that caused a lot of pain for me was getting OCIdl.idl to compile. OCIdl.idl has an
-issue with including ObjIdl.idl after adding the library statement. it results in internal compiler
-error w/o any message as to why. solution is to compile OCIdl.idl first, and then add the library
-statement to ObjIdl and compile it after.
+issue with including ObjIdl.idl, if ObjIdl.idl has an added library statement. it results in
+internal compiler error w/o any message as to why. solution is to compile OCIdl.idl first, and then
+add the library statement to ObjIdl and compile it after.
 
 
 CAVEATS/BROKED:
