@@ -562,7 +562,7 @@ def usage(prog):
             "\t%s -f somBinary -t sdk-tlbs -C coclass CLSID\n" \
             "  Dump all COM classes found in the TLB of somBinary:\n" \
             "\t%s -f somBinary -t sdk-tlbs\n" \
-            % (prog, prog, prog, prog)
+            % (prog, prog, prog, prog, prog)
     sys.exit(1)
 
 #
