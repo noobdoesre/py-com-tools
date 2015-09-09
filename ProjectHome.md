@@ -1,0 +1,1 @@
+This project consists of a standalone tool used to investigate COM controls, and an IDApython script for finding and labeling COM classes/interface present in a binary.
